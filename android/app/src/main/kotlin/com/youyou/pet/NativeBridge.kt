@@ -16,7 +16,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.view.WindowManager
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import androidx.security.crypto.MasterKeys
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.util.Locale
@@ -350,13 +350,12 @@ internal class NativeBridge(
         securePrefs?.let { return it }
         val created = try {
             val ctx = activity.applicationContext
-            val key = MasterKey.Builder(ctx)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
+            // security-crypto 1.0.0 的 API：主密钥由 Android Keystore 生成并保管。
+            val alias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
             EncryptedSharedPreferences.create(
-                ctx,
                 "youyou_secure",
-                key,
+                alias,
+                ctx,
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
