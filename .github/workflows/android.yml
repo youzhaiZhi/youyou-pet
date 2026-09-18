@@ -35,7 +35,7 @@ jobs:
         run: flutter analyze
 
       - name: 构建 Release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --target-platform android-arm64
 
       - name: 重命名产物
         run: cp build/app/outputs/flutter-apk/app-release.apk youyou-pet.apk
@@ -57,6 +57,9 @@ jobs:
             - 120fps 弹簧动画引擎（掉落自动降级 60/30fps）
             - 低延迟语音：首句软切分 + PCM 直出 + 流水线预取，首音目标 <400ms
             - 接你自己的 OpenAI 兼容接口（对话 + TTS），Key 加密存在本机
+            - 对话与云端 TTS 可分属两个网关，各自填地址与 Key
             - 装好后点右上角齿轮填 API 地址、Key、模型即可
+
+            **仅 arm64-v8a（2015 年后的手机基本都是），不兼容 32 位老机型。**
           files: youyou-pet.apk
           fail_on_unmatched_files: true
