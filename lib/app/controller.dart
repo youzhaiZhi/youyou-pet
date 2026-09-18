@@ -189,6 +189,13 @@ class PetController extends ChangeNotifier {
         placeholderSound: settings.placeholderSound,
       );
 
+  /// 表情协议。追加在用户自己的 system prompt 之后，不污染设置页里那份文本；
+  /// 情绪清单直接来自 [emotionTagList]，与引擎枚举同源，不会两边写歪。
+  String get _emotionProtocol =>
+      '\n\n【表情协议】每次回复必须以一个情绪标记开头，格式 `<emo:情绪>`，'
+      '情绪只能从以下列表里挑一个：${emotionTagList()}。'
+      '这个标记会被系统截掉、不会朗读出来，你接着正常写正文就行，不要解释这个标记。';
+
   void _applySpeechConfig() {
     final cfg = chatConfig;
     final TtsProvider provider = settings.ttsMode == 'cloud'
@@ -217,6 +224,7 @@ class PetController extends ChangeNotifier {
     liveText = '';
     lastError = null;
     engine.setState(PetState.thinking);
+    engine.setEmotion(Emotion.neutral);
     engine.trigger(PetAction.hop);
     notifyListeners();
 
@@ -228,10 +236,12 @@ class PetController extends ChangeNotifier {
     if (_history.length > 24) _history.removeAt(0);
 
     final messages = <Map<String, String>>[
-      {'role': 'system', 'content': settings.systemPrompt},
+      {'role': 'system', 'content': settings.systemPrompt + _emotionProtocol},
       ..._history,
     ];
 
+    final filter = EmotionTagFilter();
+    var emotionApplied = false;
     final buf = StringBuffer();
     try {
       final stream = chat.stream(
@@ -244,17 +254,36 @@ class PetController extends ChangeNotifier {
       );
       await for (final piece in stream) {
         if (seq != _replySeq) return;
-        buf.write(piece);
+        // 情绪标记在这里被摘掉：标记永远不进字幕、不进切分、不进 TTS。
+        final text = filter.push(piece);
+        if (!emotionApplied && filter.decided) {
+          emotionApplied = true;
+          final tag = filter.tag;
+          if (tag != null) engine.setEmotion(emotionFromTag(tag));
+        }
+        if (text.isEmpty) continue;
+        buf.write(text);
         liveText = buf.toString();
         notifyListeners();
         for (final s in _splitter.push(
-          piece,
+          text,
           nowMs: DateTime.now().millisecondsSinceEpoch,
         )) {
           if (seq != _replySeq) return;
           if (speech.metrics.firstCutMs < 0) {
             speech.metrics.firstCutMs = _splitter.firstCutMs;
           }
+          if (settings.autoSpeak) speech.enqueue(s);
+        }
+      }
+      final held = filter.flush();
+      if (held.isNotEmpty) {
+        buf.write(held);
+        for (final s in _splitter.push(
+          held,
+          nowMs: DateTime.now().millisecondsSinceEpoch,
+        )) {
+          if (seq != _replySeq) return;
           if (settings.autoSpeak) speech.enqueue(s);
         }
       }
@@ -285,6 +314,8 @@ class PetController extends ChangeNotifier {
   void _fail(String message) {
     lastError = message;
     status = LinkStatus.error;
+    // 出错是系统的脸色，别让它叠着刚才那条回复的情绪。
+    engine.setEmotion(Emotion.neutral);
     engine.setState(PetState.error);
     notifyListeners();
     Timer(const Duration(milliseconds: 2600), () {
@@ -300,6 +331,7 @@ class PetController extends ChangeNotifier {
     _replySeq++;
     streaming = false;
     await speech.stop();
+    engine.setEmotion(Emotion.neutral);
     engine.setState(PetState.idle);
     status = LinkStatus.ready;
     notifyListeners();

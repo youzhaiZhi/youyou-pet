@@ -96,6 +96,26 @@ enum EyeKey {
 
   /// 失落（内角下压）
   sad,
+
+  // ---- 以下为借鉴情绪词汇后新增的原创眼型（几何仍由本表的标量生成）----
+
+  /// 好奇（略窄略高，整体上抬）
+  curious,
+
+  /// 害羞（压扁 + 内角下压 + 整体略低）
+  shy,
+
+  /// 慌张（小而圆，上抬）
+  panic,
+
+  /// 无奈（压得很扁，轻微外垂）
+  helpless,
+
+  /// 满意（浅弯月）
+  smile,
+
+  /// 困倦（几乎闭合的薄条）
+  doze,
 }
 
 const Map<EyeKey, EyeParams> kEyeTable = {
@@ -116,6 +136,25 @@ const Map<EyeKey, EyeParams> kEyeTable = {
   EyeKey.closed: EyeParams(w: 1.00, hTop: 0.063, hBot: 0.063, pTop: 0.18, pBot: 0.18),
   EyeKey.angry: EyeParams(w: 0.96, hTop: 0.630, hBot: 0.534, pTop: 0.16, pBot: 0.16, tilt: -0.20),
   EyeKey.sad: EyeParams(w: 0.98, hTop: 0.470, hBot: 0.421, pTop: 0.22, pBot: 0.22, tilt: 0.16),
+
+  // 好奇：目标 1.85:1，hTop+hBot = 2×1.00/1.85 = 1.081，整体上抬
+  EyeKey.curious: EyeParams(
+      w: 1.00, hTop: 0.560, hBot: 0.521, pTop: 0.26, pBot: 0.26, yOff: -0.060),
+  // 害羞：目标 2.60:1，hTop+hBot = 0.769，整体略低 + 内角下压
+  EyeKey.shy: EyeParams(
+      w: 1.00, hTop: 0.400, hBot: 0.369, pTop: 0.30, pBot: 0.34, tilt: 0.11, yOff: 0.070),
+  // 慌张：目标 1.10:1，hTop+hBot = 2×0.72/1.10 = 1.309，小而圆且收窄
+  EyeKey.panic: EyeParams(
+      w: 0.72, hTop: 0.665, hBot: 0.644, pTop: 0.46, pBot: 0.44, yOff: -0.050),
+  // 无奈：目标 3.60:1，hTop+hBot = 2×1.02/3.60 = 0.567，极扁 + 轻微外垂
+  EyeKey.helpless: EyeParams(
+      w: 1.02, hTop: 0.295, hBot: 0.272, pTop: 0.16, pBot: 0.22, tilt: 0.07),
+  // 满意：弯月族（hBot 为负），视觉厚度 hTop+hBot = 2×1.00/2.60 = 0.769
+  EyeKey.smile: EyeParams(
+      w: 1.00, hTop: 0.930, hBot: -0.161, pTop: 0.30, pBot: 0.50),
+  // 困倦：目标 5.80:1，hTop+hBot = 2×1.00/5.80 = 0.345，比 closed 厚一点但不闭合
+  EyeKey.doze: EyeParams(
+      w: 1.00, hTop: 0.186, hBot: 0.159, pTop: 0.20, pBot: 0.24),
 };
 
 /// 上下缘各自采样点数（含两端）。

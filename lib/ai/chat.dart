@@ -106,9 +106,76 @@ class SentenceSplitter {
   }
 }
 
+/// 情绪标记过滤器。协议：回复必须以 `<emo:xxx>` 开头。
+///
+/// 这个标记必须在**第一个片段**就被拿掉：既不能被朗读出来，也不能污染首句切分。
+/// 模型可能把标记拆到多个 chunk（`<emo:ha` + `ppy>`），所以这里做前缀缓冲 ——
+/// 在能判定"这到底是不是标记"之前先扣住，判定完立刻原样放行。
+/// 判定只是几次正则，不增加首音延迟：不带标记的回复在第一个字符就能判否。
+class EmotionTagFilter {
+  static final RegExp _full = RegExp(
+    r'^\s*<\s*(?:emo|emoji|emotion|情绪)\s*[:：]\s*([A-Za-z_]+)\s*>\s*',
+  );
+
+  /// "还有可能是个标记"的前缀形态：`<` + 字母/中文 + 可选冒号 + 字母。
+  static final RegExp _partial = RegExp(
+    r'^\s*<\s*[A-Za-z\u4e00-\u9fa5]*\s*[:：]?\s*[A-Za-z_]*$',
+  );
+
+  /// 缓冲上限：超过就认定它不是标记（防止罕见正文被无限扣住）。
+  static const int _maxProbe = 32;
+
+  final StringBuffer _held = StringBuffer();
+  bool _done = false;
+
+  /// 已判定出的情绪标记（小写），null = 这条回复没有标记。
+  String? tag;
+
+  /// 是否已判定完毕（判定后不再缓冲，零开销直通）。
+  bool get decided => _done;
+
+  /// 喂入一个增量片段，返回可以安全交给下游（字幕/切分/TTS）的文本。
+  String push(String delta) {
+    if (_done) return delta;
+    _held.write(delta);
+    final s = _held.toString();
+
+    final m = _full.matchAsPrefix(s);
+    if (m != null) {
+      tag = m.group(1)!.toLowerCase();
+      _held.clear();
+      _done = true;
+      return s.substring(m.end);
+    }
+
+    if (_partial.hasMatch(s) && s.length <= _maxProbe) {
+      return ''; // 仍不确定：先扣住
+    }
+
+    _held.clear();
+    _done = true;
+    return s;
+  }
+
+  /// 流结束时把扣住的内容放出来，绝不吞掉正文。
+  String flush() {
+    if (_done) return '';
+    final s = _held.toString();
+    _held.clear();
+    _done = true;
+    return s;
+  }
+}
+
 /// 去掉不适合朗读的 Markdown / 符号，避免 TTS 念出 "星号 星号"。
 String sanitizeForSpeech(String input) {
   var s = input;
+  // 兜底：模型把情绪标记写歪了（不在开头/带 Markdown）时，这里再摘一次，
+  // 绝不把 "<emo:happy>" 念出来。
+  s = s.replaceAll(
+    RegExp(r'<\s*(?:emo|emoji|emotion|情绪)\s*[:：]\s*[A-Za-z_]+\s*>'),
+    '',
+  );
   s = s.replaceAll(RegExp(r'!\[[^\]]*\]\([^)]*\)'), ' ');
   s = s.replaceAllMapped(RegExp(r'\[([^\]]*)\]\([^)]*\)'), (m) => m.group(1) ?? '');
   s = s.replaceAll(RegExp(r'```[\s\S]*?```'), ' ');
@@ -180,7 +247,7 @@ class ChatConfig {
 
 const String defaultSystemPrompt =
     '你是一只住在手机里的桌面小生物，名字叫"悠悠"。你只有一双会发光的眼睛，'
-    '没有嘴巴，也不会做表情，所有情绪都靠眼神表达。\n'
+    '没有嘴巴，所有情绪都靠眼神和眼里的小动作表达。\n'
     '说话风格：口语、简短、温暖、有点俏皮。每次回复控制在 1~3 句，不要用 Markdown、'
     '不要用列表、不要用括号补充说明——因为你的话会被直接朗读出来，任何符号都会变成噪音。';
 
