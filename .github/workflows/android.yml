@@ -1,0 +1,62 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 安装 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.3'
+          channel: stable
+          cache: true
+
+      - name: 依赖
+        run: flutter pub get
+
+      - name: 静态检查
+        run: flutter analyze
+
+      - name: 构建 Release APK
+        run: flutter build apk --release
+
+      - name: 重命名产物
+        run: cp build/app/outputs/flutter-apk/app-release.apk youyou-pet.apk
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: youyou-pet-apk
+          path: youyou-pet.apk
+
+      - name: 发布 Release（生成可直接下载的直链）
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: 悠悠 v1.0.0
+          body: |
+            手机桌宠「悠悠」— 纯黑界面、只有一双会发光的眼睛。
+
+            - 120fps 弹簧动画引擎（掉落自动降级 60/30fps）
+            - 低延迟语音：首句软切分 + PCM 直出 + 流水线预取，首音目标 <400ms
+            - 接你自己的 OpenAI 兼容接口（对话 + TTS），Key 加密存在本机
+            - 装好后点右上角齿轮填 API 地址、Key、模型即可
+          files: youyou-pet.apk
+          fail_on_unmatched_files: true
