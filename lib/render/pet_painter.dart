@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import '../engine/eye_geometry.dart';
 import '../engine/pet_engine.dart';
 
-/// 眼睛宽度占屏宽比例（UI 规格：12.7%），半宽即 6.35%。
-const double kEyeHalfWidthRatio = 0.0635;
+/// 眼睛宽度占屏宽比例。半宽即 7.4%，整眼 14.8%。
+///
+/// 这里只管**绝对大小**，形状比例在 kEyeTable 里（见 eye_geometry.dart）。
+const double kEyeHalfWidthRatio = 0.0740;
 
 /// 双眼中线所在屏高比例（UI 规格：38%）。
 const double kEyeCenterYRatio = 0.38;

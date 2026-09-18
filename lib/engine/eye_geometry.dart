@@ -57,11 +57,12 @@ EyeParams lerpEye(EyeParams a, EyeParams b, double t) => EyeParams(
 
 /// 眼型字典。全部为原创设计，仅保留黑底极简所需的少量形态。
 ///
-/// 高度量纲说明：hTop/hBot 是相对**半宽**的半高，故
-/// 眼睛宽高比 = 2w / (hTop + hBot)。
-/// w≈1 的宽眼型若沿用 w≈0.66 那批的 h 值，会被压成 5:1 以上的横条
-/// （52px 宽只剩 10px 高，观感就是"眯着眼"）——
-/// 所以宽眼型的 h 要比圆眼型抬约 2.2 倍，整张表才自洽。
+/// 量纲说明：hTop/hBot 是相对**半宽**的半高，故
+///     眼睛宽高比 = 2w / (hTop + hBot)
+/// 绝对大小由 [kEyeHalfWidthRatio] 控制，本表只负责**比例**。
+/// 因此每个眼型都按目标宽高比反解 h，而不是沿用同一量级的经验值 ——
+/// 之前两次"眯着眼"就是这么来的：宽眼型抄了圆眼型的 h，
+/// 结果 bar 被压成 5:1、thin 被压成 10:1 的横条。
 enum EyeKey {
   /// 冷感横条（默认）
   bar,
@@ -98,20 +99,23 @@ enum EyeKey {
 }
 
 const Map<EyeKey, EyeParams> kEyeTable = {
-  // w≈1.0 的宽眼型：2.2 倍高度，落在 1.8:1 ~ 4.7:1 的可读区间
-  EyeKey.bar: EyeParams(w: 1.00, hTop: 0.450, hBot: 0.450, pTop: 0.18, pBot: 0.18),
-  EyeKey.soft: EyeParams(w: 1.02, hTop: 0.560, hBot: 0.545, pTop: 0.30, pBot: 0.30),
-  EyeKey.thin: EyeParams(w: 1.06, hTop: 0.235, hBot: 0.215, pTop: 0.16, pBot: 0.16),
-  // w<1 的收窄眼型：原本比例已合理，仅随家族小幅上抬
-  EyeKey.round: EyeParams(w: 0.66, hTop: 0.610, hBot: 0.610, pTop: 0.50, pBot: 0.50),
-  EyeKey.wide: EyeParams(w: 0.80, hTop: 0.680, hBot: 0.660, pTop: 0.44, pBot: 0.46),
+  // 宽眼型，目标 1.55:1 —— 睁开的圆角条
+  EyeKey.bar: EyeParams(w: 1.00, hTop: 0.645, hBot: 0.645, pTop: 0.18, pBot: 0.18),
+  // 目标 1.32:1 —— 更圆、端部更软（聆听/说话）
+  EyeKey.soft: EyeParams(w: 1.02, hTop: 0.790, hBot: 0.755, pTop: 0.30, pBot: 0.30),
+  // 目标 3.15:1 —— 仍是明显的细眼（思考）
+  EyeKey.thin: EyeParams(w: 1.06, hTop: 0.350, hBot: 0.323, pTop: 0.16, pBot: 0.16),
+  // 收窄眼型，目标 ≈1:1 —— 正圆（惊讶）
+  EyeKey.round: EyeParams(w: 0.66, hTop: 0.660, hBot: 0.660, pTop: 0.50, pBot: 0.50),
+  EyeKey.wide: EyeParams(w: 0.80, hTop: 0.730, hBot: 0.699, pTop: 0.44, pBot: 0.46),
   // 弯月族：下缘整体上凸（hBot 为负），厚度 = hTop + |hBot|
-  EyeKey.arc: EyeParams(w: 0.96, hTop: 0.620, hBot: -0.125, pTop: 0.24, pBot: 0.44),
-  EyeKey.crescent: EyeParams(w: 1.00, hTop: 0.660, hBot: -0.250, pTop: 0.34, pBot: 0.52),
-  EyeKey.half: EyeParams(w: 1.00, hTop: 0.300, hBot: 0.070, pTop: 0.18, pBot: 0.34),
-  EyeKey.closed: EyeParams(w: 1.00, hTop: 0.060, hBot: 0.060, pTop: 0.18, pBot: 0.18),
-  EyeKey.angry: EyeParams(w: 0.96, hTop: 0.480, hBot: 0.430, pTop: 0.16, pBot: 0.16, tilt: -0.20),
-  EyeKey.sad: EyeParams(w: 0.98, hTop: 0.340, hBot: 0.320, pTop: 0.22, pBot: 0.22, tilt: 0.16),
+  EyeKey.arc: EyeParams(w: 0.96, hTop: 0.560, hBot: -0.080, pTop: 0.24, pBot: 0.44),
+  EyeKey.crescent: EyeParams(w: 1.00, hTop: 0.600, hBot: -0.169, pTop: 0.34, pBot: 0.52),
+  // 半闭（困倦）：上缘下压到比下缘还浅
+  EyeKey.half: EyeParams(w: 1.00, hTop: 0.240, hBot: 0.093, pTop: 0.18, pBot: 0.34),
+  EyeKey.closed: EyeParams(w: 1.00, hTop: 0.063, hBot: 0.063, pTop: 0.18, pBot: 0.18),
+  EyeKey.angry: EyeParams(w: 0.96, hTop: 0.630, hBot: 0.534, pTop: 0.16, pBot: 0.16, tilt: -0.20),
+  EyeKey.sad: EyeParams(w: 0.98, hTop: 0.470, hBot: 0.421, pTop: 0.22, pBot: 0.22, tilt: 0.16),
 };
 
 /// 上下缘各自采样点数（含两端）。
