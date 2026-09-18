@@ -195,24 +195,35 @@ class _HomePageState extends State<HomePage>
   // ------------------------------------------------------------ 字幕（极简）
 
   Widget _subtitle(Size size) {
-    final text = c.lastError != null && c.lastError!.isNotEmpty
-        ? c.lastError!
-        : (c.liveText.isEmpty ? '点右上角齿轮，填入你自己的 API 地址与 Key' : c.liveText);
-    final isError = c.lastError != null && c.lastError!.isNotEmpty;
+    final hasError = c.lastError != null && c.lastError!.isNotEmpty;
+    final hasLive = c.liveText.isNotEmpty;
+    final configured = c.settings.baseUrl.isNotEmpty && c.apiKey.isNotEmpty;
+
+    // 优先级：报错 > 实时字幕 > 未配置时的引导。
+    // 已配置且静默时整块移除 —— 引导语不该在配好之后还常驻。
+    final String? text = hasError
+        ? c.lastError
+        : hasLive
+            ? c.liveText
+            : configured
+                ? null
+                : '点右上角齿轮，填入你自己的 API 地址与 Key';
+    if (text == null) return const SizedBox.shrink();
+
     return Positioned(
       left: size.width * 0.13,
       right: size.width * 0.13,
       top: size.height * 0.52,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 420),
-        opacity: (c.liveText.isEmpty && !isError) ? 0.42 : 1,
+        opacity: (hasError || hasLive) ? 1 : 0.42,
         child: Text(
           text,
           textAlign: TextAlign.center,
           maxLines: 6,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: isError ? kRed : kGray,
+            color: hasError ? kRed : kGray,
             fontSize: 14.5,
             height: 1.55,
             decoration: TextDecoration.none,

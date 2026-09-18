@@ -30,7 +30,10 @@ class StateProfile {
   final List<double> holdMs;
   final List<double> blinkMs;
   final bool gazeDrift;
-  final OverlayKind overlay;
+
+  /// 该状态的叠加特效。null = 无叠加层（不要用"空特效"占位，
+  /// 否则会留下一个权重恒为 1 却永不绘制的僵尸层）。
+  final OverlayKind? overlay;
 }
 
 const Map<PetState, StateProfile> kProfiles = {
@@ -40,7 +43,8 @@ const Map<PetState, StateProfile> kProfiles = {
     holdMs: [9000, 17000],
     blinkMs: [6000, 14000],
     gazeDrift: true,
-    overlay: OverlayKind.dots,
+    // 什么都不做时不该有"思考中"的三点 —— 那是 thinking 的语汇。
+    overlay: null,
   ),
   PetState.listening: StateProfile(
     base: EyeKey.soft,
@@ -255,10 +259,12 @@ class PetEngine {
     if (next == PetState.speaking) _energy.to(0.2);
   }
 
-  void _applyOverlay(OverlayKind kind) {
+  void _applyOverlay(OverlayKind? kind) {
     for (final l in _layers) {
       l.weight.to(l.kind == kind ? 1 : 0);
     }
+    // 无叠加层：旧层已降到 0，直接返回，不再新建。
+    if (kind == null) return;
     if (!_layers.any((l) => l.kind == kind)) {
       final l = OverlayLayer(kind, 0);
       l.weight.to(1);
