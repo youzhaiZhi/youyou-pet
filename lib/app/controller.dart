@@ -108,6 +108,9 @@ class PetController extends ChangeNotifier {
   AppSettings settings = AppSettings();
   String apiKey = '';
 
+  /// 云端 TTS 的独立 Key。留空则复用 [apiKey]（见 ChatConfig.speechApiKey）。
+  String ttsApiKey = '';
+
   LinkStatus status = LinkStatus.ready;
 
   /// 正在流式输出的回复文本（界面上以极简字幕呈现）。
@@ -152,6 +155,7 @@ class PetController extends ChangeNotifier {
       } catch (_) {}
     }
     apiKey = await bridge.secretGet('apiKey') ?? '';
+    ttsApiKey = await bridge.secretGet('ttsApiKey') ?? '';
     _applySpeechConfig();
     if (settings.ttsMode == 'system') {
       unawaited(bridge.systemTtsInit());
@@ -161,6 +165,7 @@ class PetController extends ChangeNotifier {
   Future<void> save() async {
     await bridge.prefsSet('settings', jsonEncode(settings.toJson()));
     await bridge.secretSet('apiKey', apiKey);
+    await bridge.secretSet('ttsApiKey', ttsApiKey);
     _applySpeechConfig();
     if (settings.ttsMode == 'system') {
       unawaited(bridge.systemTtsInit());
@@ -175,6 +180,7 @@ class PetController extends ChangeNotifier {
         temperature: settings.temperature,
         systemPrompt: settings.systemPrompt,
         ttsBaseUrl: settings.ttsBaseUrl,
+        ttsApiKey: ttsApiKey,
         ttsModel: settings.ttsModel,
         ttsVoice: settings.ttsVoice,
         ttsSampleRate: settings.ttsSampleRate,

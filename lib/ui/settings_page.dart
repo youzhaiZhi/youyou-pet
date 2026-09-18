@@ -17,6 +17,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late final TextEditingController _model;
   late final TextEditingController _prompt;
   late final TextEditingController _ttsBase;
+  late final TextEditingController _ttsKey;
   late final TextEditingController _ttsModel;
   late final TextEditingController _ttsVoice;
   late double _temp;
@@ -28,6 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late bool _autoSpeak;
   late bool _metrics;
   bool _reveal = false;
+  bool _revealTts = false;
 
   PetController get c => widget.controller;
 
@@ -40,6 +42,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _model = TextEditingController(text: s.model);
     _prompt = TextEditingController(text: s.systemPrompt);
     _ttsBase = TextEditingController(text: s.ttsBaseUrl);
+    _ttsKey = TextEditingController(text: c.ttsApiKey);
     _ttsModel = TextEditingController(text: s.ttsModel);
     _ttsVoice = TextEditingController(text: s.ttsVoice);
     _temp = s.temperature;
@@ -54,7 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
-    for (final t in [_baseUrl, _key, _model, _prompt, _ttsBase, _ttsModel, _ttsVoice]) {
+    for (final t in [_baseUrl, _key, _model, _prompt, _ttsBase, _ttsKey, _ttsModel, _ttsVoice]) {
       t.dispose();
     }
     super.dispose();
@@ -77,6 +80,7 @@ class _SettingsPageState extends State<SettingsPage> {
     s.autoSpeak = _autoSpeak;
     s.showMetrics = _metrics;
     c.apiKey = _key.text.trim();
+    c.ttsApiKey = _ttsKey.text.trim();
     await c.save();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -138,6 +142,21 @@ class _SettingsPageState extends State<SettingsPage> {
           }),
           if (_ttsMode == 'cloud') ...[
             _field('TTS 地址（留空则同对话地址）', _ttsBase, hint: 'https://api.openai.com/v1'),
+            _field(
+              'TTS API Key（留空则复用对话 Key）',
+              _ttsKey,
+              hint: 'sk-...',
+              obscure: !_revealTts,
+              trailing: IconButton(
+                splashRadius: 18,
+                icon: Icon(
+                  _revealTts ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 18,
+                  color: kDim,
+                ),
+                onPressed: () => setState(() => _revealTts = !_revealTts),
+              ),
+            ),
             _field('TTS 模型', _ttsModel, hint: 'tts-1'),
             _field('音色', _ttsVoice, hint: 'alloy'),
             _segment(

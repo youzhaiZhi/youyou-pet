@@ -131,6 +131,7 @@ class ChatConfig {
     this.temperature = 0.8,
     this.systemPrompt = defaultSystemPrompt,
     this.ttsBaseUrl = '',
+    this.ttsApiKey = '',
     this.ttsModel = 'tts-1',
     this.ttsVoice = 'alloy',
     this.ttsSampleRate = 24000,
@@ -146,6 +147,7 @@ class ChatConfig {
   final String systemPrompt;
 
   final String ttsBaseUrl;
+  final String ttsApiKey;
   final String ttsModel;
   final String ttsVoice;
   final int ttsSampleRate;
@@ -156,6 +158,9 @@ class ChatConfig {
   String get chatEndpoint => joinUrl(baseUrl, '/chat/completions');
   String get speechEndpoint => joinUrl(ttsBaseUrl.isEmpty ? baseUrl : ttsBaseUrl, '/audio/speech');
 
+  /// 云端 TTS 用哪把 Key：填了就分家，留空则复用对话 Key。
+  String get speechApiKey => ttsApiKey.isEmpty ? apiKey : ttsApiKey;
+
   ChatConfig copyWith(Map<String, Object?> patch) => ChatConfig(
         baseUrl: (patch['baseUrl'] as String?) ?? baseUrl,
         apiKey: (patch['apiKey'] as String?) ?? apiKey,
@@ -163,6 +168,7 @@ class ChatConfig {
         temperature: (patch['temperature'] as double?) ?? temperature,
         systemPrompt: (patch['systemPrompt'] as String?) ?? systemPrompt,
         ttsBaseUrl: (patch['ttsBaseUrl'] as String?) ?? ttsBaseUrl,
+        ttsApiKey: (patch['ttsApiKey'] as String?) ?? ttsApiKey,
         ttsModel: (patch['ttsModel'] as String?) ?? ttsModel,
         ttsVoice: (patch['ttsVoice'] as String?) ?? ttsVoice,
         ttsSampleRate: (patch['ttsSampleRate'] as int?) ?? ttsSampleRate,

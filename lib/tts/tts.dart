@@ -86,7 +86,7 @@ class OpenAiTtsProvider extends TtsProvider {
     try {
       final c = _clientFor(cfg.speechEndpoint);
       final req = await c.openUrl('GET', Uri.parse(cfg.speechEndpoint));
-      req.headers.set(HttpHeaders.authorizationHeader, 'Bearer ${cfg.apiKey}');
+      req.headers.set(HttpHeaders.authorizationHeader, 'Bearer ${cfg.speechApiKey}');
       final resp = await req.close().timeout(const Duration(seconds: 5));
       await resp.drain<void>().catchError((_) => null);
     } catch (_) {}
@@ -108,8 +108,8 @@ class OpenAiTtsProvider extends TtsProvider {
     final req = await client.postUrl(Uri.parse(cfg.speechEndpoint));
     req.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=utf-8');
     req.headers.set(HttpHeaders.connectionHeader, 'keep-alive');
-    if (cfg.apiKey.isNotEmpty) {
-      req.headers.set(HttpHeaders.authorizationHeader, 'Bearer ${cfg.apiKey}');
+    if (cfg.speechApiKey.isNotEmpty) {
+      req.headers.set(HttpHeaders.authorizationHeader, 'Bearer ${cfg.speechApiKey}');
     }
     final body = <String, Object?>{
       'model': cfg.ttsModel,
